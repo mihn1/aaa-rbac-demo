@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aaa_db
+      POSTGRES_USER: aaa_user
+      POSTGRES_PASSWORD: aaa_password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aaa_user -d aaa_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      backend:
+        aliases:
+          - db
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://aaa_user:aaa_password@db:5432/aaa_db
+      ENVIRONMENT: production
+      LOG_TO_DATABASE: "true"
+      LOG_TO_FILE: "true"
+      LOG_FILE_PATH: logs/audit.log
+      JWT_SECRET: change-me
+      SESSION_SECRET: change-me-too
+    ports:
+      - "8000:8000"
+    volumes:
+      - app-logs:/app/logs
+    networks:
+      frontend:
+      backend:
+
+volumes:
+  db-data:
+  app-logs:
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    internal: true

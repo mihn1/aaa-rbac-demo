@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="space-y-8">
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold">Security Dashboard</h1>
+            <p class="text-slate-400">Monitor authentication activity and respond to alerts.</p>
+        </div>
+        <button id="refresh-events" class="btn-secondary md:w-auto">Refresh Events</button>
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="stat-card">
+            <h3 class="stat-label">Total Logins</h3>
+            <p class="stat-value" data-stat="total_logins">{{ stats.total_logins }}</p>
+        </div>
+        <div class="stat-card">
+            <h3 class="stat-label">Failed Logins</h3>
+            <p class="stat-value" data-stat="failed_logins">{{ stats.failed_logins }}</p>
+        </div>
+        <div class="stat-card">
+            <h3 class="stat-label">Failed (5m)</h3>
+            <p class="stat-value" data-stat="recent_failed_logins">{{ stats.recent_failed_logins }}</p>
+        </div>
+    </section>
+
+    <section class="bg-slate-800 border border-slate-700 rounded-lg p-5">
+        <header class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold">Recent Alerts</h2>
+            <span class="text-sm text-slate-400">Max 10 latest</span>
+        </header>
+        <div id="alerts" class="space-y-3">
+            {% for alert in alerts %}
+            <article class="alert-card" data-alert-id="{{ alert.id }}">
+                <div>
+                    <h3 class="font-semibold">{{ alert.rule_name }}</h3>
+                    <p class="text-xs text-slate-400">Detected {{ alert.detected_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    <p class="text-sm text-slate-300">Severity: <span class="font-semibold">{{ alert.severity }}</span></p>
+                    <pre class="text-xs bg-slate-900 p-3 rounded mt-2 overflow-x-auto">{{ alert.details | tojson(indent=2) }}</pre>
+                </div>
+                {% if not alert.acknowledged %}
+                <button class="btn-primary mt-3" data-ack-button="{{ alert.id }}">Acknowledge</button>
+                {% else %}
+                <span class="text-xs text-emerald-400">Acknowledged</span>
+                {% endif %}
+            </article>
+            {% else %}
+            <p class="text-slate-400">No alerts generated yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="bg-slate-800 border border-slate-700 rounded-lg p-5">
+        <header class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold">Latest Events</h2>
+            <span class="text-sm text-slate-400">Updated via API</span>
+        </header>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+                <thead class="bg-slate-900 uppercase text-xs tracking-wide">
+                    <tr>
+                        <th class="px-3 py-2">When</th>
+                        <th class="px-3 py-2">User</th>
+                        <th class="px-3 py-2">Role</th>
+                        <th class="px-3 py-2">Action</th>
+                        <th class="px-3 py-2">Endpoint</th>
+                        <th class="px-3 py-2">Status</th>
+                        <th class="px-3 py-2">Latency</th>
+                    </tr>
+                </thead>
+                <tbody id="event-table" class="divide-y divide-slate-700">
+                    <tr>
+                        <td colspan="7" class="text-center text-slate-400 py-4">Loading events...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}

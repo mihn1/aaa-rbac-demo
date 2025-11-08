@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="space-y-8">
+    <header>
+        <h1 class="text-2xl font-semibold">Role & Permission Management</h1>
+        <p class="text-slate-400">Define access policies and assign permissions.</p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form method="post" action="/admin/roles" class="bg-slate-800 border border-slate-700 rounded-lg p-5 space-y-4">
+            <h2 class="text-xl font-semibold">Create Role</h2>
+            <div>
+                <label class="block text-sm text-slate-300" for="role_name">Name</label>
+                <input id="role_name" name="name" type="text" required class="input" placeholder="Analyst" />
+            </div>
+            <div>
+                <label class="block text-sm text-slate-300" for="role_description">Description</label>
+                <textarea id="role_description" name="description" class="input h-24" placeholder="Describe responsibilities"></textarea>
+            </div>
+            <button type="submit" class="btn-primary w-full">Create Role</button>
+        </form>
+
+        <form method="post" action="/admin/permissions" class="bg-slate-800 border border-slate-700 rounded-lg p-5 space-y-4">
+            <h2 class="text-xl font-semibold">Create Permission</h2>
+            <div>
+                <label class="block text-sm text-slate-300" for="permission_name">Name</label>
+                <input id="permission_name" name="name" type="text" required class="input" placeholder="logs:view" />
+            </div>
+            <div>
+                <label class="block text-sm text-slate-300" for="permission_description">Description</label>
+                <textarea id="permission_description" name="description" class="input h-24" placeholder="Describe usage"></textarea>
+            </div>
+            <button type="submit" class="btn-secondary w-full">Create Permission</button>
+        </form>
+    </div>
+
+    <section class="bg-slate-800 border border-slate-700 rounded-lg p-5">
+        <h2 class="text-xl font-semibold mb-4">Roles</h2>
+        <div class="space-y-6">
+            {% for role in roles %}
+            <article class="border border-slate-700 rounded-md p-4 space-y-3">
+                <header class="flex items-center justify-between">
+                    <h3 class="font-semibold">{{ role.name }}</h3>
+                    <span class="text-xs text-slate-400">{{ role.description or "No description" }}</span>
+                </header>
+                <div>
+                    <h4 class="text-sm text-slate-300">Permissions</h4>
+                    <p class="text-sm">{% for perm in role.permissions %}{{ perm.name }}{% if not loop.last %}, {% endif %}{% else %}<span class="text-slate-400">None</span>{% endfor %}</p>
+                </div>
+                <form method="post" action="/admin/roles/{{ role.id }}/permissions" class="space-y-2">
+                    <label class="block text-sm text-slate-300" for="permission_ids_{{ role.id }}">Update Permissions</label>
+                    <select id="permission_ids_{{ role.id }}" name="permission_ids" multiple size="6" class="input h-40">
+                        {% for perm in permissions %}
+                        <option value="{{ perm.id }}" {% if perm in role.permissions %}selected{% endif %}>{{ perm.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn-secondary">Save Permissions</button>
+                </form>
+            </article>
+            {% else %}
+            <p class="text-slate-400">No roles defined yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endblock %}
