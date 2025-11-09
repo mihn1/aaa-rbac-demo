@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .constants.permissions import ADMIN_PERMISSION
 from .db import get_session
 from .models import Permission, Role, User
 from .security import get_current_user
@@ -42,9 +43,9 @@ def require_permission(permission_name: str):
         session: AsyncSession = Depends(get_session),
     ) -> User:
         permissions = await fetch_user_permissions(session, current_user)
-        if permission_name not in permissions:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permission")
-        return current_user
+        if ADMIN_PERMISSION in permissions or permission_name in permissions:
+            return current_user
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permission")
 
     return dependency
 
@@ -57,8 +58,8 @@ def require_permissions(permission_names: Iterable[str]):
         session: AsyncSession = Depends(get_session),
     ) -> User:
         permissions = await fetch_user_permissions(session, current_user)
-        if not required.issubset(permissions):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
-        return current_user
+        if ADMIN_PERMISSION in permissions or required.issubset(permissions):
+            return current_user
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
 
     return dependency

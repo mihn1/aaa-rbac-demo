@@ -9,6 +9,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, selectinload
 
+from .constants.permissions import (
+    ADMIN_PERMISSION,
+    ALL_PERMISSIONS,
+    LOG_READ_PERMISSION,
+    PERMISSION_DESCRIPTIONS,
+    ROLE_MANAGE_PERMISSION,
+    ROLE_READ_PERMISSION,
+    USER_MANAGE_PERMISSION,
+    USER_READ_PERMISSION,
+)
+from .constants.roles import ADMIN_ROLE, ALL_ROLES, ROLE_DESCRIPTIONS, USER_ROLE
+
 from .config import settings
 
 
@@ -89,43 +101,49 @@ async def _seed_initial_data() -> None:
     async with SessionLocal() as session:
         created = False
 
-        admin_permission = await session.scalar(
-            select(Permission).where(Permission.name == "admin:manage")
+        existing_permissions = await session.execute(
+            select(Permission).where(Permission.name.in_(ALL_PERMISSIONS))
         )
-        if admin_permission is None:
-            admin_permission = Permission(
-                name="admin:manage",
-                description="Full administrative access",
-            )
-            session.add(admin_permission)
-            created = True
+        permissions_by_name = {permission.name: permission for permission in existing_permissions.scalars()}
 
-        logs_permission = await session.scalar(
-            select(Permission).where(Permission.name == "logs:view")
+        for permission_name in ALL_PERMISSIONS:
+            if permission_name not in permissions_by_name:
+                permission = Permission(
+                    name=permission_name,
+                    description=PERMISSION_DESCRIPTIONS.get(permission_name),
+                )
+                session.add(permission)
+                permissions_by_name[permission_name] = permission
+                created = True
+
+        existing_roles = await session.execute(
+            select(Role).options(selectinload(Role.permissions)).where(Role.name.in_(ALL_ROLES))
         )
-        if logs_permission is None:
-            logs_permission = Permission(
-                name="logs:view",
-                description="View audit logs",
-            )
-            session.add(logs_permission)
-            created = True
+        roles_by_name = {role.name: role for role in existing_roles.scalars()}
 
-        admin_role = await session.scalar(
-            select(Role).options(selectinload(Role.permissions)).where(Role.name == "Administrator")
-        )
-        if admin_role is None:
-            admin_role = Role(name="Administrator", description="Platform administrator")
-            session.add(admin_role)
-            created = True
-        if admin_permission and admin_permission not in admin_role.permissions:
-            admin_role.permissions.append(admin_permission)
-            created = True
-        if logs_permission and logs_permission not in admin_role.permissions:
-            admin_role.permissions.append(logs_permission)
-            created = True
+        for role_name in ALL_ROLES:
+            if role_name not in roles_by_name:
+                role = Role(name=role_name, description=ROLE_DESCRIPTIONS.get(role_name))
+                session.add(role)
+                roles_by_name[role_name] = role
+                created = True
 
-        # seed admin user
+        role_permission_map = {
+            ADMIN_ROLE: ALL_PERMISSIONS,
+            USER_ROLE: [LOG_READ_PERMISSION, USER_READ_PERMISSION, ROLE_READ_PERMISSION],
+        }
+
+        for role_name, permission_list in role_permission_map.items():
+            role = roles_by_name.get(role_name)
+            if role is None:
+                continue
+            current_permissions = set(role.permissions)
+            for permission_name in permission_list:
+                permission = permissions_by_name.get(permission_name)
+                if permission and permission not in current_permissions:
+                    role.permissions.append(permission)
+                    created = True
+
         admin_user = await session.scalar(
             select(User).options(selectinload(User.roles)).where(User.username == "admin")
         )
@@ -136,14 +154,14 @@ async def _seed_initial_data() -> None:
                 hashed_password=hash_password("admin"),
                 is_active=True,
             )
-            admin_user.roles.append(admin_role)
+            if ADMIN_ROLE in roles_by_name:
+                admin_user.roles.append(roles_by_name[ADMIN_ROLE])
             session.add(admin_user)
             created = True
-        elif admin_role not in admin_user.roles:
-            admin_user.roles.append(admin_role)
+        elif ADMIN_ROLE in roles_by_name and roles_by_name[ADMIN_ROLE] not in admin_user.roles:
+            admin_user.roles.append(roles_by_name[ADMIN_ROLE])
             created = True
 
-        # seed normal user
         normal_user = await session.scalar(
             select(User).options(selectinload(User.roles)).where(User.username == "user")
         )
@@ -154,8 +172,16 @@ async def _seed_initial_data() -> None:
                 hashed_password=hash_password("user"),
                 is_active=True,
             )
+            user_role = roles_by_name.get(USER_ROLE)
+            if user_role:
+                normal_user.roles.append(user_role)
             session.add(normal_user)
             created = True
+        else:
+            user_role = roles_by_name.get(USER_ROLE)
+            if user_role and user_role not in normal_user.roles:
+                normal_user.roles.append(user_role)
+                created = True
 
         if created:
             logger.info("Initial data seeded into the database")

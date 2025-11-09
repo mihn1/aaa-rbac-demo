@@ -10,6 +10,8 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.constants.permissions import LOG_READ_PERMISSION
+
 from ..db import get_session
 from ..models import Alert, AuditLog, User
 from ..rbac import require_permission
@@ -18,9 +20,6 @@ router = APIRouter()
 
 template_dir = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=str(template_dir))
-
-LOG_VIEW_PERMISSION = "logs:view"
-
 
 class AuditLogRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -51,7 +50,7 @@ class AlertRead(BaseModel):
 async def dashboard(
     request: Request,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(LOG_VIEW_PERMISSION)),
+    current_user: User = Depends(require_permission(LOG_READ_PERMISSION)),
 ) -> HTMLResponse:
     stats = await _summaries(session)
     alerts_stmt = select(Alert).order_by(Alert.detected_at.desc()).limit(10)
@@ -73,7 +72,7 @@ async def dashboard(
 async def list_events(
     limit: int = 100,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(LOG_VIEW_PERMISSION)),
+    current_user: User = Depends(require_permission(LOG_READ_PERMISSION)),
 ) -> list[AuditLogRead]:
     stmt = select(AuditLog).order_by(AuditLog.occurred_at.desc()).limit(limit)
     result = await session.execute(stmt)
@@ -84,7 +83,7 @@ async def list_events(
 @router.get("/alerts", response_model=list[AlertRead])
 async def list_alerts(
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(LOG_VIEW_PERMISSION)),
+    current_user: User = Depends(require_permission(LOG_READ_PERMISSION)),
 ) -> list[AlertRead]:
     stmt = select(Alert).order_by(Alert.detected_at.desc())
     result = await session.execute(stmt)
@@ -96,7 +95,7 @@ async def list_alerts(
 async def acknowledge_alert(
     alert_id: int,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(LOG_VIEW_PERMISSION)),
+    current_user: User = Depends(require_permission(LOG_READ_PERMISSION)),
 ) -> AlertRead:
     stmt = select(Alert).where(Alert.id == alert_id)
     result = await session.execute(stmt)

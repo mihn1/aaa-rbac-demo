@@ -11,6 +11,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.constants.permissions import (
+    ROLE_MANAGE_PERMISSION,
+    ROLE_READ_PERMISSION,
+    USER_MANAGE_PERMISSION,
+    USER_READ_PERMISSION,
+)
+
 from ..db import get_session
 from ..models import Permission, Role, User
 from ..rbac import require_permission
@@ -20,9 +27,6 @@ router = APIRouter()
 
 template_dir = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=str(template_dir))
-
-ADMIN_PERMISSION = "admin:manage"
-
 
 def _parse_id_list(values: Iterable[object]) -> list[int]:
     ids: list[int] = []
@@ -42,7 +46,7 @@ def _parse_id_list(values: Iterable[object]) -> list[int]:
 async def users_page(
     request: Request,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
+    current_user: User = Depends(require_permission(USER_READ_PERMISSION)),
 ) -> HTMLResponse:
     result = await session.execute(select(User).options(selectinload(User.roles)))
     users: Sequence[User] = result.scalars().all()
@@ -68,7 +72,7 @@ async def create_user(
     email: str | None = Form(None),
     password: str = Form(...),
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
+    current_user: User = Depends(require_permission(USER_MANAGE_PERMISSION)),
 ) -> Response:
     new_user = User(username=username, email=email, hashed_password=hash_password(password))
     form = await request.form()
@@ -92,7 +96,7 @@ async def assign_roles(
     request: Request,
     user_id: int,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
+    current_user: User = Depends(require_permission(USER_MANAGE_PERMISSION)),
 ) -> Response:
     result = await session.execute(
         select(User).where(User.id == user_id).options(selectinload(User.roles))
@@ -117,7 +121,7 @@ async def assign_roles(
 async def roles_page(
     request: Request,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
+    current_user: User = Depends(require_permission(ROLE_READ_PERMISSION)),
 ) -> HTMLResponse:
     result = await session.execute(select(Role).options(selectinload(Role.permissions)))
     roles = result.scalars().all()
@@ -141,7 +145,7 @@ async def create_role(
     name: str = Form(...),
     description: str | None = Form(None),
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
+    current_user: User = Depends(require_permission(ROLE_MANAGE_PERMISSION)),
 ) -> Response:
     role = Role(name=name, description=description)
     session.add(role)
@@ -158,7 +162,7 @@ async def create_permission(
     name: str = Form(...),
     description: str | None = Form(None),
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
+    current_user: User = Depends(require_permission(ROLE_MANAGE_PERMISSION)),
 ) -> Response:
     permission = Permission(name=name, description=description)
     session.add(permission)
@@ -175,7 +179,7 @@ async def update_role_permissions(
     request: Request,
     role_id: int,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
+    current_user: User = Depends(require_permission(ROLE_MANAGE_PERMISSION)),
 ) -> Response:
     result = await session.execute(
         select(Role).where(Role.id == role_id).options(selectinload(Role.permissions))
