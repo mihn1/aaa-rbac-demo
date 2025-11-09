@@ -54,8 +54,12 @@ def create_app() -> FastAPI:
         if exc.status_code in {status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN}:
             accept = (request.headers.get("accept") or "").lower()
             if "text/html" in accept:
+                redirect_target = "/auth/login-ui"
+                if exc.status_code == status.HTTP_403_FORBIDDEN and request.cookies.get("access_token"):
+                    redirect_target = "/home?warning=permission"
+
                 response = RedirectResponse(
-                    url="/auth/login-ui",
+                    url=redirect_target,
                     status_code=status.HTTP_303_SEE_OTHER,
                 )
                 if exc.status_code == status.HTTP_401_UNAUTHORIZED:

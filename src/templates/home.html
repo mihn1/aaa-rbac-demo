@@ -2,6 +2,12 @@
 
 {% block content %}
 <section class="space-y-6">
+    {% if request.query_params.get('warning') == 'permission' %}
+    <div class="rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-800 px-4 py-3 shadow-sm">
+        <h2 class="text-sm font-semibold">Limited Access</h2>
+        <p class="text-sm">You were redirected here because your account does not have permission to view that page.</p>
+    </div>
+    {% endif %}
     <header class="space-y-2">
         <h1 class="text-3xl font-semibold text-slate-900">Welcome back{{ ", " + current_user.username if current_user else "" }}!</h1>
         <p class="text-slate-600 max-w-2xl">
