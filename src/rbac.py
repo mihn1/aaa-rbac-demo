@@ -1,11 +1,7 @@
-from __future__ import annotations
-
 from typing import Iterable
-
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from .constants.permissions import ADMIN_PERMISSION
 from .db import get_session
 from .models import Permission, Role, User

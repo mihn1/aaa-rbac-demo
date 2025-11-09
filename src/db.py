@@ -1,22 +1,16 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, selectinload
 
 from .constants.permissions import (
-    ADMIN_PERMISSION,
     ALL_PERMISSIONS,
     LOG_READ_PERMISSION,
     PERMISSION_DESCRIPTIONS,
-    ROLE_MANAGE_PERMISSION,
     ROLE_READ_PERMISSION,
-    USER_MANAGE_PERMISSION,
     USER_READ_PERMISSION,
 )
 from .constants.roles import ADMIN_ROLE, ALL_ROLES, ROLE_DESCRIPTIONS, USER_ROLE

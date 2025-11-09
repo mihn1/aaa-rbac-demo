@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from pathlib import Path
-
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates

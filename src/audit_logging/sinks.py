@@ -1,15 +1,14 @@
-from __future__ import annotations
-
 import asyncio
 import json
 from datetime import datetime
+import logging
 from pathlib import Path
 from typing import Iterable, Protocol
-
 import asyncpg
 
 from ..config import settings
 
+logger = logging.getLogger(__name__)
 
 class LogSink(Protocol):
     async def write(self, payload: dict) -> None: ...
@@ -37,7 +36,7 @@ class PostgresLogSink:
         self._pool: asyncpg.Pool | None = None
         self._pool_lock = asyncio.Lock()
 
-    async def _get_pool(self) -> asyncpg.Pool:
+    async def _get_pool(self) -> asyncpg.Pool | None:
         if self._pool is None:
             async with self._pool_lock:
                 if self._pool is None:
@@ -46,6 +45,9 @@ class PostgresLogSink:
 
     async def write(self, payload: dict) -> None:
         pool = await self._get_pool()
+        if pool is None:
+            logger.error("PostgresLogSink: unable to acquire connection pool")
+            return
         occurred_at = datetime.fromisoformat(payload["timestamp"])
         async with pool.acquire() as conn:
             await conn.execute(
@@ -88,7 +90,7 @@ class CompositeLogSink:
         await asyncio.gather(*(sink.write(payload) for sink in self._sinks))
 
 
-def build_default_sink() -> LogSink:
+def get_default_sink() -> LogSink:
     sinks: list[LogSink] = []
     if settings.log_to_file:
         sinks.append(FileLogSink(settings.log_file_path))

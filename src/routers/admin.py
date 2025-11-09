@@ -1,8 +1,5 @@
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Iterable, Sequence
-
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates

@@ -1,14 +1,11 @@
-from __future__ import annotations
-
 from typing import Mapping
+from .events import LogEvent
+from .sinks import LogSink, get_default_sink
 
-from .events import AAAEvent
-from .sinks import LogSink, build_default_sink
 
-
-class AAAEventLogger:
+class EventLogger:
     def __init__(self, sink: LogSink | None = None) -> None:
-        self._sink = sink or build_default_sink()
+        self._sink = sink or get_default_sink()
 
     async def emit(
         self,
@@ -24,7 +21,7 @@ class AAAEventLogger:
         request_id: str | None = None,
         metadata: Mapping | None = None,
     ) -> None:
-        event = AAAEvent.now(
+        event = LogEvent.now(
             user=user,
             role=role,
             ip_address=ip_address,
@@ -39,4 +36,4 @@ class AAAEventLogger:
         await self._sink.write(event.to_payload())
 
 
-default_event_logger = AAAEventLogger()
+default_event_logger = EventLogger()

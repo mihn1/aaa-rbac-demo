@@ -6,9 +6,7 @@ from typing import Any, Mapping
 
 
 @dataclass(slots=True)
-class AAAEvent:
-    """Structured representation of an AAA (authentication, authorization, accounting) log entry."""
-
+class LogEvent:
     timestamp: datetime
     user: str | None
     role: str | None
@@ -41,7 +39,7 @@ class AAAEvent:
         latency_ms: int | None = None,
         request_id: str | None = None,
         metadata: Mapping[str, Any] | None = None,
-    ) -> "AAAEvent":
+    ) -> "LogEvent":
         return cls(
             timestamp=datetime.now(tz=timezone.utc),
             user=user,

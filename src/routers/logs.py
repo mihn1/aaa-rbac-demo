@@ -1,8 +1,5 @@
-from __future__ import annotations
-
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates

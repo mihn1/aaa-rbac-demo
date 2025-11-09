@@ -8,14 +8,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from sqlalchemy.orm.exc import DetachedInstanceError
 
-from .events import AAAEvent
-from .sinks import LogSink, build_default_sink
+from .events import LogEvent
+from .sinks import LogSink, get_default_sink
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, *, sink: LogSink | None = None) -> None:
         super().__init__(app)
-        self._sink = sink or build_default_sink()
+        self._sink = sink or get_default_sink()
 
     async def dispatch(self, request: Request, call_next) -> Response:
         start = time.perf_counter()
@@ -76,7 +76,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         role_name = ",".join(sorted(role_names)) if role_names else None
 
         client_host = request.client.host if request.client else None
-        event = AAAEvent.now(
+        event = LogEvent.now(
             user=username,
             role=role_name,
             ip_address=client_host,

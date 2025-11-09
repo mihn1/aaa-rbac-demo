@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from pathlib import Path
-
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
