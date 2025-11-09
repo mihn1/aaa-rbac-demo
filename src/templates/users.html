@@ -22,14 +22,20 @@
                 <label class="block text-sm text-slate-300" for="password">Password</label>
                 <input id="password" name="password" type="password" required class="input" />
             </div>
-            <div>
-                <label class="block text-sm text-slate-300" for="role_ids">Roles</label>
-                <select id="role_ids" name="role_ids" multiple size="4" class="input h-32">
+            <div class="space-y-2">
+                <span class="block text-sm text-slate-300">Roles</span>
+                {% if roles %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {% for role in roles %}
-                    <option value="{{ role.id }}">{{ role.name }}</option>
+                    <label class="flex items-center gap-2 text-sm text-slate-200">
+                        <input class="checkbox" type="checkbox" name="role_ids" value="{{ role.id }}" />
+                        <span>{{ role.name }}</span>
+                    </label>
                     {% endfor %}
-                </select>
-                <p class="text-xs text-slate-400 mt-1">Hold Ctrl/Cmd to select multiple roles.</p>
+                </div>
+                {% else %}
+                <p class="text-xs text-slate-400">No roles defined yet.</p>
+                {% endif %}
             </div>
             <button type="submit" class="btn-primary w-full">Create</button>
         </form>
@@ -48,16 +54,31 @@
                     </div>
                     <div>
                         <h4 class="text-sm text-slate-300">Roles</h4>
-                        <p class="text-sm">{% for role in user.roles %}{{ role.name }}{% if not loop.last %}, {% endif %}{% else %}<span class="text-slate-400">None</span>{% endfor %}</p>
-                    </div>
-                    <form method="post" action="/admin/users/{{ user.id }}/roles" class="space-y-2">
-                        <label class="block text-sm text-slate-300" for="role_ids_{{ user.id }}">Update Roles</label>
-                        <select id="role_ids_{{ user.id }}" name="role_ids" multiple size="4" class="input h-32">
-                            {% for role in roles %}
-                            <option value="{{ role.id }}" {% if role in user.roles %}selected{% endif %}>{{ role.name }}</option>
+                        <div class="flex flex-wrap gap-2">
+                            {% for role in user.roles %}
+                            <span class="badge">{{ role.name }}</span>
+                            {% else %}
+                            <span class="text-slate-400 text-sm">None</span>
                             {% endfor %}
-                        </select>
-                        <button type="submit" class="btn-secondary">Save Roles</button>
+                        </div>
+                    </div>
+                    <form method="post" action="/admin/users/{{ user.id }}/roles" class="space-y-3">
+                        <fieldset class="space-y-2">
+                            <legend class="text-sm text-slate-300">Update Roles</legend>
+                            {% if roles %}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {% for role in roles %}
+                                <label class="flex items-center gap-2 text-sm text-slate-200">
+                                    <input class="checkbox" type="checkbox" name="role_ids" value="{{ role.id }}" {% if role in user.roles %}checked{% endif %} />
+                                    <span>{{ role.name }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-xs text-slate-400">No roles available.</p>
+                            {% endif %}
+                        </fieldset>
+                        <button type="submit" class="btn-secondary">Update Roles</button>
                     </form>
                 </article>
                 {% else %}

@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -47,8 +47,9 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     @app.get("/")
-    async def root() -> RedirectResponse:
-        return RedirectResponse(url="/logs/dashboard")
+    async def root(request: Request) -> RedirectResponse:
+        target = "/logs/dashboard" if request.cookies.get("access_token") else "/auth/login-ui"
+        return RedirectResponse(url=target)
 
     @app.get("/healthz")
     async def healthcheck() -> dict[str, str]:

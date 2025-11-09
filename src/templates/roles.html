@@ -46,16 +46,31 @@
                 </header>
                 <div>
                     <h4 class="text-sm text-slate-300">Permissions</h4>
-                    <p class="text-sm">{% for perm in role.permissions %}{{ perm.name }}{% if not loop.last %}, {% endif %}{% else %}<span class="text-slate-400">None</span>{% endfor %}</p>
-                </div>
-                <form method="post" action="/admin/roles/{{ role.id }}/permissions" class="space-y-2">
-                    <label class="block text-sm text-slate-300" for="permission_ids_{{ role.id }}">Update Permissions</label>
-                    <select id="permission_ids_{{ role.id }}" name="permission_ids" multiple size="6" class="input h-40">
-                        {% for perm in permissions %}
-                        <option value="{{ perm.id }}" {% if perm in role.permissions %}selected{% endif %}>{{ perm.name }}</option>
+                    <div class="flex flex-wrap gap-2">
+                        {% for perm in role.permissions %}
+                        <span class="badge">{{ perm.name }}</span>
+                        {% else %}
+                        <span class="text-slate-400 text-sm">None</span>
                         {% endfor %}
-                    </select>
-                    <button type="submit" class="btn-secondary">Save Permissions</button>
+                    </div>
+                </div>
+                <form method="post" action="/admin/roles/{{ role.id }}/permissions" class="space-y-3">
+                    <fieldset class="space-y-2">
+                        <legend class="text-sm text-slate-300">Update Permissions</legend>
+                        {% if permissions %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {% for perm in permissions %}
+                            <label class="flex items-center gap-2 text-sm text-slate-200">
+                                <input class="checkbox" type="checkbox" name="permission_ids" value="{{ perm.id }}" {% if perm in role.permissions %}checked{% endif %} />
+                                <span>{{ perm.name }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-xs text-slate-400">No permissions defined yet.</p>
+                        {% endif %}
+                    </fieldset>
+                    <button type="submit" class="btn-secondary">Update Permissions</button>
                 </form>
             </article>
             {% else %}

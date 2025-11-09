@@ -5,8 +5,9 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, selectinload
 
 from .config import settings
 
@@ -72,6 +73,7 @@ async def init_db() -> None:
         else:
             if attempt > 1:
                 logger.info("Database connection re-established after %s attempts", attempt)
+            await _seed_initial_data()
             return
 
     logger.error(
@@ -80,3 +82,84 @@ async def init_db() -> None:
     if last_error is not None:
         raise last_error
     raise RuntimeError("Failed to initialize database without an explicit error")
+
+
+async def _seed_initial_data() -> None:
+    from .models import Permission, Role, User
+    from .security import hash_password
+
+    async with SessionLocal() as session:
+        created = False
+
+        admin_permission = await session.scalar(
+            select(Permission).where(Permission.name == "admin:manage")
+        )
+        if admin_permission is None:
+            admin_permission = Permission(
+                name="admin:manage",
+                description="Full administrative access",
+            )
+            session.add(admin_permission)
+            created = True
+
+        logs_permission = await session.scalar(
+            select(Permission).where(Permission.name == "logs:view")
+        )
+        if logs_permission is None:
+            logs_permission = Permission(
+                name="logs:view",
+                description="View audit logs",
+            )
+            session.add(logs_permission)
+            created = True
+
+        admin_role = await session.scalar(
+            select(Role).options(selectinload(Role.permissions)).where(Role.name == "Administrator")
+        )
+        if admin_role is None:
+            admin_role = Role(name="Administrator", description="Platform administrator")
+            session.add(admin_role)
+            created = True
+        if admin_permission and admin_permission not in admin_role.permissions:
+            admin_role.permissions.append(admin_permission)
+            created = True
+        if logs_permission and logs_permission not in admin_role.permissions:
+            admin_role.permissions.append(logs_permission)
+            created = True
+
+        # seed admin user
+        admin_user = await session.scalar(
+            select(User).options(selectinload(User.roles)).where(User.username == "admin")
+        )
+        if admin_user is None:
+            admin_user = User(
+                username="admin",
+                email="admin@example.com",
+                hashed_password=hash_password("admin"),
+                is_active=True,
+            )
+            admin_user.roles.append(admin_role)
+            session.add(admin_user)
+            created = True
+        elif admin_role not in admin_user.roles:
+            admin_user.roles.append(admin_role)
+            created = True
+
+        # seed normal user
+        normal_user = await session.scalar(
+            select(User).options(selectinload(User.roles)).where(User.username == "user")
+        )
+        if normal_user is None:
+            normal_user = User(
+                username="user",
+                email="user@example.com",
+                hashed_password=hash_password("user"),
+                is_active=True,
+            )
+            session.add(normal_user)
+            created = True
+
+        if created:
+            logger.info("Initial data seeded into the database")
+
+        await session.commit()

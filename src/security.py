@@ -9,6 +9,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import settings
@@ -17,7 +18,7 @@ from .models import User
 
 
 pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 class TokenPair(BaseModel):
@@ -71,14 +72,19 @@ def decode_token(token: str) -> TokenPayload:
 
 async def get_current_user(
     request: Request,
-    token: str = Depends(oauth2_scheme),
+    token: str | None = Depends(oauth2_scheme),
     session: AsyncSession = Depends(get_session),
 ) -> User:
-    payload = decode_token(token)
+    token_value = token or request.cookies.get("access_token")
+    if not token_value:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    payload = decode_token(token_value)
     if payload.type != "access":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
-    result = await session.execute(select(User).where(User.id == int(payload.sub)))
+    stmt = select(User).options(selectinload(User.roles)).where(User.id == int(payload.sub))
+    result = await session.execute(stmt)
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -94,7 +100,8 @@ async def authenticate_user(
     username: str,
     password: str,
 ) -> User | None:
-    result = await session.execute(select(User).where(User.username == username))
+    stmt = select(User).options(selectinload(User.roles)).where(User.username == username)
+    result = await session.execute(stmt)
     user = result.scalar_one_or_none()
     if user is None or not verify_password(password, user.hashed_password):
         return None
@@ -116,7 +123,8 @@ async def get_user_by_refresh_token(
     if payload.type != "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
-    result = await session.execute(select(User).where(User.id == int(payload.sub)))
+    stmt = select(User).options(selectinload(User.roles)).where(User.id == int(payload.sub))
+    result = await session.execute(stmt)
     user = result.scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")

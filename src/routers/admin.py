@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Sequence
+from typing import Iterable, Sequence
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -22,6 +22,20 @@ template_dir = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=str(template_dir))
 
 ADMIN_PERMISSION = "admin:manage"
+
+
+def _parse_id_list(values: Iterable[object]) -> list[int]:
+    ids: list[int] = []
+    for value in values:
+        if isinstance(value, str):
+            candidate = value.strip()
+            if not candidate:
+                continue
+            try:
+                ids.append(int(candidate))
+            except ValueError:
+                continue
+    return ids
 
 
 @router.get("/users", response_class=HTMLResponse)
@@ -49,14 +63,16 @@ async def users_page(
 
 @router.post("/users", response_class=Response)
 async def create_user(
+    request: Request,
     username: str = Form(...),
     email: str | None = Form(None),
     password: str = Form(...),
-    role_ids: list[int] | None = Form(None),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
 ) -> Response:
     new_user = User(username=username, email=email, hashed_password=hash_password(password))
+    form = await request.form()
+    role_ids = _parse_id_list(form.getlist("role_ids"))
     if role_ids:
         roles = await session.execute(select(Role).where(Role.id.in_(role_ids)))
         new_user.roles = list(roles.scalars())
@@ -73,8 +89,8 @@ async def create_user(
 
 @router.post("/users/{user_id}/roles", response_class=Response)
 async def assign_roles(
+    request: Request,
     user_id: int,
-    role_ids: list[int] | None = Form(None),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
 ) -> Response:
@@ -85,6 +101,8 @@ async def assign_roles(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    form = await request.form()
+    role_ids = _parse_id_list(form.getlist("role_ids"))
     if role_ids:
         roles = await session.execute(select(Role).where(Role.id.in_(role_ids)))
         user.roles = list(roles.scalars())
@@ -154,8 +172,8 @@ async def create_permission(
 
 @router.post("/roles/{role_id}/permissions", response_class=Response)
 async def update_role_permissions(
+    request: Request,
     role_id: int,
-    permission_ids: list[int] | None = Form(None),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_permission(ADMIN_PERMISSION)),
 ) -> Response:
@@ -166,6 +184,8 @@ async def update_role_permissions(
     if role is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
 
+    form = await request.form()
+    permission_ids = _parse_id_list(form.getlist("permission_ids"))
     if permission_ids:
         permissions = await session.execute(
             select(Permission).where(Permission.id.in_(permission_ids))

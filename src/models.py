@@ -37,7 +37,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     roles: Mapped[list["Role"]] = relationship(
-        "Role", secondary=user_roles, back_populates="users", lazy="joined"
+        "Role", secondary=user_roles, back_populates="users", lazy="selectin"
     )
 
 
