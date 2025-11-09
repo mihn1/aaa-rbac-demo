@@ -3,86 +3,86 @@
 {% block content %}
 <section class="space-y-8">
     <header>
-        <h1 class="text-2xl font-semibold">User Management</h1>
-        <p class="text-slate-400">Create users and manage their role assignments.</p>
+        <h1 class="text-2xl font-semibold text-slate-900">User Management</h1>
+        <p class="text-slate-600">Create users and manage their role assignments.</p>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <form method="post" action="/admin/users" class="bg-slate-800 border border-slate-700 rounded-lg p-5 space-y-4">
-            <h2 class="text-xl font-semibold">Create User</h2>
+        <form method="post" action="/admin/users" class="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+            <h2 class="text-xl font-semibold text-slate-900">Create User</h2>
             <div>
-                <label class="block text-sm text-slate-300" for="username">Username</label>
+                <label class="block text-sm text-slate-600" for="username">Username</label>
                 <input id="username" name="username" type="text" required class="input" placeholder="alice" />
             </div>
             <div>
-                <label class="block text-sm text-slate-300" for="email">Email</label>
+                <label class="block text-sm text-slate-600" for="email">Email</label>
                 <input id="email" name="email" type="email" class="input" placeholder="alice@example.com" />
             </div>
             <div>
-                <label class="block text-sm text-slate-300" for="password">Password</label>
+                <label class="block text-sm text-slate-600" for="password">Password</label>
                 <input id="password" name="password" type="password" required class="input" />
             </div>
             <div class="space-y-2">
-                <span class="block text-sm text-slate-300">Roles</span>
+                <span class="block text-sm text-slate-600">Roles</span>
                 {% if roles %}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {% for role in roles %}
-                    <label class="flex items-center gap-2 text-sm text-slate-200">
+                    <label class="flex items-center gap-2 text-sm text-slate-700">
                         <input class="checkbox" type="checkbox" name="role_ids" value="{{ role.id }}" />
                         <span>{{ role.name }}</span>
                     </label>
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-xs text-slate-400">No roles defined yet.</p>
+                <p class="text-xs text-slate-500">No roles defined yet.</p>
                 {% endif %}
             </div>
             <button type="submit" class="btn-primary w-full">Create</button>
         </form>
 
-        <section class="bg-slate-800 border border-slate-700 rounded-lg p-5">
-            <h2 class="text-xl font-semibold mb-4">Existing Users</h2>
+        <section class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h2 class="text-xl font-semibold text-slate-900 mb-4">Existing Users</h2>
             <div class="space-y-6">
                 {% for user in users %}
-                <article class="border border-slate-700 rounded-md p-4 space-y-3">
+                <article class="border border-slate-200 rounded-lg p-4 space-y-3">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="font-semibold">{{ user.username }}</h3>
-                            <p class="text-xs text-slate-400">{{ user.email or "No email" }}</p>
+                            <h3 class="font-semibold text-slate-900">{{ user.username }}</h3>
+                            <p class="text-xs text-slate-500">{{ user.email or "No email" }}</p>
                         </div>
-                        <span class="text-xs text-slate-400">{{ user.created_at.strftime('%Y-%m-%d') }}</span>
+                        <span class="text-xs text-slate-500">{{ user.created_at.strftime('%Y-%m-%d') }}</span>
                     </div>
                     <div>
-                        <h4 class="text-sm text-slate-300">Roles</h4>
+                        <h4 class="text-sm text-slate-600">Roles</h4>
                         <div class="flex flex-wrap gap-2">
                             {% for role in user.roles %}
                             <span class="badge">{{ role.name }}</span>
                             {% else %}
-                            <span class="text-slate-400 text-sm">None</span>
+                            <span class="text-slate-500 text-sm">None</span>
                             {% endfor %}
                         </div>
                     </div>
                     <form method="post" action="/admin/users/{{ user.id }}/roles" class="space-y-3">
                         <fieldset class="space-y-2">
-                            <legend class="text-sm text-slate-300">Update Roles</legend>
+                            <legend class="text-sm text-slate-600">Update Roles</legend>
                             {% if roles %}
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {% for role in roles %}
-                                <label class="flex items-center gap-2 text-sm text-slate-200">
+                                <label class="flex items-center gap-2 text-sm text-slate-700">
                                     <input class="checkbox" type="checkbox" name="role_ids" value="{{ role.id }}" {% if role in user.roles %}checked{% endif %} />
                                     <span>{{ role.name }}</span>
                                 </label>
                                 {% endfor %}
                             </div>
                             {% else %}
-                            <p class="text-xs text-slate-400">No roles available.</p>
+                            <p class="text-xs text-slate-500">No roles available.</p>
                             {% endif %}
                         </fieldset>
                         <button type="submit" class="btn-secondary">Update Roles</button>
                     </form>
                 </article>
                 {% else %}
-                <p class="text-slate-400">No users created yet.</p>
+                <p class="text-slate-500">No users created yet.</p>
                 {% endfor %}
             </div>
         </section>

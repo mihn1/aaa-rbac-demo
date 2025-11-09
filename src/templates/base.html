@@ -7,21 +7,22 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-<nav class="bg-slate-800 border-b border-slate-700">
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+<nav class="bg-white/95 border-b border-slate-200 backdrop-blur">
     <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-        <a href="/" class="text-lg font-semibold">AAA RBAC Console</a>
-        <div class="flex items-center gap-4">
-            <a class="hover:text-emerald-300" href="/admin/users">Users</a>
-            <a class="hover:text-emerald-300" href="/admin/roles">Roles</a>
-            <a class="hover:text-emerald-300" href="/logs/dashboard">Logs</a>
+        <a href="/" class="text-lg font-semibold text-slate-900">AAA RBAC Console</a>
+        <div class="flex items-center gap-4 text-sm font-medium">
+            <a class="hover:text-emerald-600 text-slate-600" href="/home">Home</a>
+            <a class="hover:text-emerald-600 text-slate-600" href="/admin/users">Users</a>
+            <a class="hover:text-emerald-600 text-slate-600" href="/admin/roles">Roles</a>
+            <a class="hover:text-emerald-600 text-slate-600" href="/logs/dashboard">Logs</a>
             {% if current_user %}
-            <a class="hover:text-emerald-300" href="/auth/logout-ui">Logout</a>
+            <a class="hover:text-emerald-600 text-slate-600" href="/auth/logout-ui">Logout</a>
             {% else %}
-            <a class="hover:text-emerald-300" href="/auth/login-ui">Login</a>
+            <a class="hover:text-emerald-600 text-slate-600" href="/auth/login-ui">Login</a>
             {% endif %}
         </div>
-        <span class="text-sm text-slate-400">{{ current_user.username if current_user else "" }}</span>
+        <span class="text-sm text-slate-500">{{ current_user.username if current_user else "" }}</span>
     </div>
 </nav>
 <main class="max-w-6xl mx-auto px-4 py-6">

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="space-y-6">
+    <header class="space-y-2">
+        <h1 class="text-3xl font-semibold text-slate-900">Welcome back{{ ", " + current_user.username if current_user else "" }}!</h1>
+        <p class="text-slate-600 max-w-2xl">
+            This console provides secure access to account administration, authorization management, and audit insights.
+            Use the navigation bar to explore the areas you have been granted access to.
+        </p>
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <article class="stat-card space-y-3">
+            <h2 class="stat-label">Your Roles</h2>
+            {% if current_user and current_user.roles %}
+            <div class="flex flex-wrap gap-2">
+                {% for role in current_user.roles %}
+                <span class="badge">{{ role.name }}</span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">No roles assigned yet. Contact an administrator if you believe this is an error.</p>
+            {% endif %}
+        </article>
+
+        <article class="stat-card space-y-3">
+            <h2 class="stat-label">Quick Actions</h2>
+            <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                <li><a class="text-emerald-600 hover:underline" href="/admin/users">Manage users</a></li>
+                <li><a class="text-emerald-600 hover:underline" href="/admin/roles">Configure roles & permissions</a></li>
+                <li><a class="text-emerald-600 hover:underline" href="/logs/dashboard">Review audit activity</a></li>
+            </ul>
+            <p class="text-xs text-slate-500">Links you do not have permission to access will return you to the login page.</p>
+        </article>
+    </section>
+</section>
+{% endblock %}
