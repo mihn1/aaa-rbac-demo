@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import time
-from typing import Any
 from uuid import uuid4
 
 from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from sqlalchemy.orm.exc import DetachedInstanceError
 
 from .events import AAAEvent
 from .sinks import LogSink, build_default_sink
@@ -54,13 +55,29 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         request_id: str,
     ) -> None:
         current_user = getattr(request.state, "current_user", None)
-        role_name = None
-        if current_user and getattr(current_user, "roles", None):
-            role_name = ",".join(sorted(role.name for role in current_user.roles))
+        username = getattr(request.state, "current_user_username", None)
+        role_names = getattr(request.state, "current_user_roles", None)
+
+        if current_user:
+            if username is None:
+                try:
+                    username = getattr(current_user, "username", None)
+                except DetachedInstanceError:
+                    username = None
+
+            if role_names is None:
+                try:
+                    roles = getattr(current_user, "roles", None)
+                    if roles:
+                        role_names = [role.name for role in roles]
+                except DetachedInstanceError:
+                    role_names = None
+
+        role_name = ",".join(sorted(role_names)) if role_names else None
 
         client_host = request.client.host if request.client else None
         event = AAAEvent.now(
-            user=getattr(current_user, "username", None),
+            user=username,
             role=role_name,
             ip_address=client_host,
             endpoint=request.url.path,

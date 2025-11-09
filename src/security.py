@@ -92,6 +92,8 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
 
     request.state.current_user = user
+    request.state.current_user_username = user.username
+    request.state.current_user_roles = [role.name for role in user.roles]
     return user
 
 

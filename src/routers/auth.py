@@ -79,7 +79,7 @@ async def login(
 @router.get("/login-ui")
 async def login_page(request: Request) -> Response:
     if request.cookies.get("access_token"):
-        return RedirectResponse(url="/logs/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/home", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse("login.html", {"request": request, "current_user": None})
 
 
@@ -114,7 +114,7 @@ async def login_ui(
         role=",".join(user_roles) or None,
     )
 
-    response = RedirectResponse(url="/logs/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/home", status_code=status.HTTP_303_SEE_OTHER)
     secure_cookie = settings.environment.lower() == "production"
     response.set_cookie(
         "access_token",

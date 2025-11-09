@@ -47,8 +47,6 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 
 
 async def init_db() -> None:
-    from . import models
-
     attempt = 0
     last_error: Exception | None = None
 
@@ -57,7 +55,7 @@ async def init_db() -> None:
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-        except Exception as exc:  # noqa: BLE001 - propagate for final attempt
+        except Exception as exc:
             last_error = exc
             if attempt >= settings.db_init_max_attempts:
                 break

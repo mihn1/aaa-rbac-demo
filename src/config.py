@@ -11,18 +11,17 @@ class Settings(BaseSettings):
 
     app_name: str = "AAA RBAC Service"
     environment: str = "development"
-    database_url: str = (
-        "postgresql+asyncpg://aaa_user:aaa_password@localhost:5432/aaa_db"
-    )
+    # get database connection URL from environment variable or use default
+    database_url: str = "postgresql+asyncpg://aaa_user:aaa_password@localhost:5432/aaa_db"
     log_file_path: str = "logs/audit.log"
     log_to_database: bool = True
     log_to_file: bool = True
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost", "http://localhost:8000"])
     access_token_expire_minutes: int = 30
     refresh_token_expire_minutes: int = 60 * 24 * 14
-    jwt_secret: str = "replace-me"
+    jwt_secret: str = "jwt_secret"
     jwt_algorithm: str = "HS256"
-    session_secret: str = "replace-me-too"
+    session_secret: str = "session_secret"
     brute_force_threshold: int = 5
     brute_force_window_seconds: int = 300
     db_init_max_attempts: int = 10
