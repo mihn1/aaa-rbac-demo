@@ -28,14 +28,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql+asyncpg://aaa_user:aaa_password@db:5432/aaa_db
       ENVIRONMENT: production
       LOG_TO_DATABASE: "true"
       LOG_TO_FILE: "true"
       LOG_FILE_PATH: logs/audit.log
-      JWT_SECRET: change-me
-      SESSION_SECRET: change-me-too
+      JWT_SECRET: jwt_secret
+      SESSION_SECRET: session_secret
+      LOG_TO_ELASTICSEARCH: "true"
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_INDEX: aaa-audit-logs
     ports:
       - "8080:8080"
     volumes:
@@ -44,9 +49,61 @@ services:
       frontend:
       backend:
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      backend:
+        aliases:
+          - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.3
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      SERVER_PUBLICBASEURL: http://localhost:5601
+    ports:
+      - "5601:5601"
+    networks:
+      backend:
+      frontend:
+
+  traffic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "scripts/traffic_generator.py", "--base-url", "http://app:8080", "--scenario", "all", "--count", "25"]
+    depends_on:
+      - app
+    profiles:
+      - simulation
+    networks:
+      backend:
+
 volumes:
   db-data:
   app-logs:
+  es-data:
 
 networks:
   frontend:

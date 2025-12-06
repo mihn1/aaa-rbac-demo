@@ -4,7 +4,9 @@ from datetime import datetime
 import logging
 from pathlib import Path
 from typing import Iterable, Protocol
+
 import asyncpg
+import httpx
 
 from ..config import settings
 
@@ -90,6 +92,34 @@ class CompositeLogSink:
         await asyncio.gather(*(sink.write(payload) for sink in self._sinks))
 
 
+class ElasticsearchLogSink:
+    def __init__(self, base_url: str, index: str) -> None:
+        self._base_url = base_url.rstrip("/")
+        self._index = index
+        self._client: httpx.AsyncClient | None = None
+        self._client_lock = asyncio.Lock()
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            async with self._client_lock:
+                if self._client is None:
+                    self._client = httpx.AsyncClient(base_url=self._base_url, timeout=10)
+        return self._client
+
+    async def write(self, payload: dict) -> None:
+        client = await self._get_client()
+        try:
+            response = await client.post(f"/{self._index}/_doc", json=payload)
+            if response.status_code >= 300:
+                logger.error(
+                    "ElasticsearchLogSink write failed: status=%s body=%s",
+                    response.status_code,
+                    response.text,
+                )
+        except httpx.HTTPError as exc:
+            logger.error("ElasticsearchLogSink write error: %s", exc)
+
+
 def get_default_sink() -> LogSink:
     sinks: list[LogSink] = []
     if settings.log_to_file:
@@ -97,4 +127,11 @@ def get_default_sink() -> LogSink:
     if settings.log_to_database:
         dsn = settings.database_url.replace("+asyncpg", "")
         sinks.append(PostgresLogSink(dsn))
+    if settings.log_to_elasticsearch:
+        sinks.append(
+            ElasticsearchLogSink(
+                base_url=settings.elasticsearch_url,
+                index=settings.elasticsearch_index,
+            )
+        )
     return CompositeLogSink(sinks)

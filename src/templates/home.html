@@ -35,6 +35,9 @@
             <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
                 <li><a class="text-emerald-600 hover:underline" href="/admin/users">Manage users</a></li>
                 <li><a class="text-emerald-600 hover:underline" href="/admin/roles">Configure roles & permissions</a></li>
+                {% if show_rule_link %}
+                <li><a class="text-emerald-600 hover:underline" href="/admin/rules">Tune detection rules</a> <span class="text-xs text-slate-400">(Admin)</span></li>
+                {% endif %}
                 <li><a class="text-emerald-600 hover:underline" href="/logs/dashboard">Review audit activity</a></li>
             </ul>
             <p class="text-xs text-slate-500">Links you do not have permission to access will return you to the login page.</p>

@@ -12,6 +12,9 @@ USER_READ_PERMISSION = "users:read"
 ROLE_MANAGE_PERMISSION = "roles:manage"
 ROLE_READ_PERMISSION = "roles:read"
 
+# rule permissions
+RULE_MANAGE_PERMISSION = "rules:manage"
+
 ALL_PERMISSIONS = [
     ADMIN_PERMISSION,
     LOG_READ_PERMISSION,
@@ -19,6 +22,7 @@ ALL_PERMISSIONS = [
     USER_READ_PERMISSION,
     ROLE_MANAGE_PERMISSION,
     ROLE_READ_PERMISSION,
+    RULE_MANAGE_PERMISSION,
 ]
 
 PERMISSION_DESCRIPTIONS = {
@@ -28,4 +32,5 @@ PERMISSION_DESCRIPTIONS = {
     USER_READ_PERMISSION: "Read-only access to user directory",
     ROLE_MANAGE_PERMISSION: "Create and manage roles",
     ROLE_READ_PERMISSION: "Read-only access to role catalog",
+    RULE_MANAGE_PERMISSION: "Create and manage detection rules",
 }

@@ -1,5 +1,5 @@
 """API routers for the AAA RBAC project."""
 
-from . import admin, auth, home, logs
+from . import admin, auth, home, logs, rules
 
-__all__ = ["admin", "auth", "home", "logs"]
+__all__ = ["admin", "auth", "home", "logs", "rules"]

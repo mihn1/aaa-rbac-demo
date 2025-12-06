@@ -9,12 +9,14 @@ if __package__ is None or __package__ == "":
     from config import settings  # type: ignore[no-redef]
     from db import init_db  # type: ignore[no-redef]
     from audit_logging import LoggingMiddleware  # type: ignore[no-redef]
-    from routers import admin, auth, home, logs  # type: ignore[no-redef]
+    from routers import admin, auth, home, logs, rules  # type: ignore[no-redef]
+    from rules import RuleExecutor  # type: ignore[no-redef]
 else:
     from .config import settings
     from .db import init_db
     from .audit_logging import LoggingMiddleware
-    from .routers import admin, auth, home, logs
+    from .routers import admin, auth, home, logs, rules
+    from .rules import RuleExecutor
 
 static_dir = Path(__file__).resolve().parent / "static"
 
@@ -22,7 +24,12 @@ static_dir = Path(__file__).resolve().parent / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    yield
+    executor = RuleExecutor()
+    executor.start()
+    try:
+        yield
+    finally:
+        await executor.stop()
 
 
 def create_app() -> FastAPI:
@@ -39,6 +46,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router, prefix="/auth", tags=["auth"])
     app.include_router(admin.router, prefix="/admin", tags=["admin"])
+    app.include_router(rules.router, prefix="/admin", tags=["rules"])
     app.include_router(home.router, tags=["home"])
     app.include_router(logs.router, prefix="/logs", tags=["logs"])
 

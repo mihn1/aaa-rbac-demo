@@ -16,6 +16,7 @@ from .constants.permissions import (
 from .constants.roles import ADMIN_ROLE, ALL_ROLES, ROLE_DESCRIPTIONS, USER_ROLE
 
 from .config import settings
+from .search import ensure_elasticsearch_index
 
 
 class Base(DeclarativeBase):
@@ -78,6 +79,7 @@ async def init_db() -> None:
             if attempt > 1:
                 logger.info("Database connection re-established after %s attempts", attempt)
             await _seed_initial_data()
+            await ensure_elasticsearch_index()
             return
 
     logger.error(
@@ -89,7 +91,7 @@ async def init_db() -> None:
 
 
 async def _seed_initial_data() -> None:
-    from .models import Permission, Role, User
+    from .models import DetectionRule, Permission, Role, User
     from .security import hash_password
 
     async with SessionLocal() as session:
@@ -175,6 +177,72 @@ async def _seed_initial_data() -> None:
             user_role = roles_by_name.get(USER_ROLE)
             if user_role and user_role not in normal_user.roles:
                 normal_user.roles.append(user_role)
+                created = True
+
+        default_rules = [
+            {
+                "name": "Failed Login Burst",
+                "description": "Alert when overall failed logins exceed the rolling threshold",
+                "rule_type": "failed_login_threshold",
+                "window_seconds": settings.brute_force_window_seconds,
+                "threshold": settings.brute_force_threshold,
+                "severity": "high",
+                "config": {
+                    "endpoint": "/auth/login",
+                    "status_code": 401,
+                    "result": "failure",
+                },
+            },
+            {
+                "name": "User Failed Login Spike",
+                "description": "Detect a single user failing authentication repeatedly in a short window",
+                "rule_type": "per_user_failed_login_threshold",
+                "window_seconds": settings.brute_force_window_seconds,
+                "threshold": 3,
+                "severity": "high",
+                "config": {
+                    "endpoint": "/auth/login",
+                    "status_code": 401,
+                    "result": "failure",
+                    "group_by": "user_name",
+                },
+            },
+            {
+                "name": "IP Failed Login Spike",
+                "description": "Detect a remote host rotating through credentials and failing repeatedly",
+                "rule_type": "per_ip_failed_login_threshold",
+                "window_seconds": settings.brute_force_window_seconds,
+                "threshold": 10,
+                "severity": "medium",
+                "config": {
+                    "endpoint": "/auth/login",
+                    "status_code": 401,
+                    "result": "failure",
+                    "group_by": "ip_address",
+                },
+            },
+            {
+                "name": "Forbidden Admin Probe",
+                "description": "Alert when multiple forbidden hits land on admin routes from the same IP",
+                "rule_type": "forbidden_admin_probe",
+                "window_seconds": 300,
+                "threshold": 5,
+                "severity": "medium",
+                "config": {
+                    "status_code": 403,
+                    "endpoint": {"value": "/admin/%", "match": "like"},
+                    "group_by": "ip_address",
+                },
+            },
+        ]
+
+        for rule in default_rules:
+            existing_rule = await session.scalar(
+                select(DetectionRule).where(DetectionRule.name == rule["name"])
+            )
+            if existing_rule is None:
+                session.add(DetectionRule(**rule))
+                logger.info("Seeded default detection rule: %s", rule["name"])
                 created = True
 
         if created:

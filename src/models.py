@@ -93,3 +93,19 @@ class Alert(Base):
     details: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     acknowledged: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class DetectionRule(Base):
+    __tablename__ = "detection_rules"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    description: Mapped[str | None] = mapped_column(String(256))
+    rule_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    window_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
+    threshold: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    severity: Mapped[str] = mapped_column(String(32), nullable=False, default="medium")
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    last_triggered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_evaluated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

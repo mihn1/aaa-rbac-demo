@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     log_file_path: str = "logs/audit.log"
     log_to_database: bool = True
     log_to_file: bool = True
+    log_to_elasticsearch: bool = False
+    elasticsearch_url: str = "http://localhost:9200"
+    elasticsearch_index: str = "aaa-audit-logs"
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost", "http://localhost:8080"])
     access_token_expire_minutes: int = 30
     refresh_token_expire_minutes: int = 60 * 24 * 14
@@ -25,6 +28,7 @@ class Settings(BaseSettings):
     brute_force_window_seconds: int = 300
     db_init_max_attempts: int = 10
     db_init_retry_seconds: float = 3.0
+    rule_eval_interval_seconds: int = 30
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -33,7 +37,7 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
 
-    @field_validator("log_to_database", "log_to_file", mode="before")
+    @field_validator("log_to_database", "log_to_file", "log_to_elasticsearch", mode="before")
     @classmethod
     def parse_bool(cls, value: Any) -> bool:
         if isinstance(value, str):
