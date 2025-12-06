@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     elasticsearch_url: str = "http://localhost:9200"
     elasticsearch_index: str = "aaa-audit-logs"
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost", "http://localhost:8080"])
-    access_token_expire_minutes: int = 30
+    access_token_expire_minutes: int = 60
     refresh_token_expire_minutes: int = 60 * 24 * 14
     jwt_secret: str = "jwt_secret"
     jwt_algorithm: str = "HS256"
