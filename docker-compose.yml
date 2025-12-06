@@ -37,7 +37,7 @@ services:
       JWT_SECRET: change-me
       SESSION_SECRET: change-me-too
     ports:
-      - "8000:8000"
+      - "8080:8080"
     volumes:
       - app-logs:/app/logs
     networks:

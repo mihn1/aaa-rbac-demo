@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     log_file_path: str = "logs/audit.log"
     log_to_database: bool = True
     log_to_file: bool = True
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost", "http://localhost:8000"])
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost", "http://localhost:8080"])
     access_token_expire_minutes: int = 30
     refresh_token_expire_minutes: int = 60 * 24 * 14
     jwt_secret: str = "jwt_secret"
