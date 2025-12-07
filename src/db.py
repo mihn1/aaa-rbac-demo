@@ -179,6 +179,13 @@ async def _seed_initial_data() -> None:
                 normal_user.roles.append(user_role)
                 created = True
 
+        login_endpoint_rule_names = {
+            "Failed Login Burst",
+            "User Failed Login Spike",
+            "IP Failed Login Spike",
+        }
+
+        login_endpoints = ["/auth/login", "/auth/login-ui"]
         default_rules = [
             {
                 "name": "Failed Login Burst",
@@ -188,7 +195,7 @@ async def _seed_initial_data() -> None:
                 "threshold": settings.brute_force_threshold,
                 "severity": "high",
                 "config": {
-                    "endpoint": "/auth/login",
+                    "endpoint": login_endpoints,
                     "status_code": 401,
                     "result": "failure",
                 },
@@ -201,7 +208,7 @@ async def _seed_initial_data() -> None:
                 "threshold": 3,
                 "severity": "high",
                 "config": {
-                    "endpoint": "/auth/login",
+                    "endpoint": login_endpoints,
                     "status_code": 401,
                     "result": "failure",
                     "group_by": "user_name",
@@ -215,7 +222,7 @@ async def _seed_initial_data() -> None:
                 "threshold": 10,
                 "severity": "medium",
                 "config": {
-                    "endpoint": "/auth/login",
+                    "endpoint": login_endpoints,
                     "status_code": 401,
                     "result": "failure",
                     "group_by": "ip_address",
@@ -244,6 +251,23 @@ async def _seed_initial_data() -> None:
                 session.add(DetectionRule(**rule))
                 logger.info("Seeded default detection rule: %s", rule["name"])
                 created = True
+            elif rule["name"] in login_endpoint_rule_names:
+                existing_config = dict(existing_rule.config or {})
+                endpoint_value = existing_config.get("endpoint")
+
+                if isinstance(endpoint_value, list):
+                    existing_endpoints = set(endpoint_value)
+                elif isinstance(endpoint_value, str):
+                    existing_endpoints = {endpoint_value}
+                else:
+                    existing_endpoints = set()
+
+                desired_endpoints = set(login_endpoints)
+                if not existing_endpoints.issuperset(desired_endpoints):
+                    existing_config["endpoint"] = login_endpoints.copy()
+                    existing_rule.config = existing_config
+                    created = True
+                    logger.info("Updated login endpoints for detection rule: %s", rule["name"])
 
         if created:
             logger.info("Initial data seeded into the database")

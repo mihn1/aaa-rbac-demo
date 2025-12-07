@@ -46,9 +46,11 @@ class RefreshRequest(BaseModel):
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: AsyncSession = Depends(get_session),
 ) -> LoginResponse:
+    request.state.current_user_username = form_data.username
     user = await authenticate_user(session, form_data.username, form_data.password)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -87,6 +89,7 @@ async def login_ui(
     password: str = Form(...),
     session: AsyncSession = Depends(get_session),
 ) -> Response:
+    request.state.current_user_username = username
     user = await authenticate_user(session, username, password)
     if user is None:
         return templates.TemplateResponse(
