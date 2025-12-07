@@ -88,18 +88,6 @@ services:
       backend:
       frontend:
 
-  traffic:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: ["python", "scripts/traffic_generator.py", "--base-url", "http://app:8080", "--scenario", "all", "--count", "25"]
-    depends_on:
-      - app
-    profiles:
-      - simulation
-    networks:
-      backend:
-
 volumes:
   db-data:
   app-logs:
